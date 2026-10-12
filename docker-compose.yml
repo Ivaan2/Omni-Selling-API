@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:17.6
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_USER: orders
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD in .env or environment}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orders -d orders"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+  receiver:
+    image: python:3.13-slim
+    command: ["python", "/app/receiver.py"]
+    volumes:
+      - ./scripts/receiver.py:/app/receiver.py:ro
+    ports:
+      - "127.0.0.1:8090:8090"
+volumes:
+  postgres-data:

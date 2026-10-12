@@ -1,0 +1,16 @@
+{
+  "environment": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "url": "http://localhost:8080",
+  "operation": "create-order",
+  "concurrency": 4,
+  "requests": 100,
+  "durationSeconds": 0.7534823030000553,
+  "achievedRequestsPerSecond": 132.71711837403654,
+  "errorRate": 0.0,
+  "latencyMs": {
+    "median": 26.852281000174116,
+    "p95": 49.792341999818746,
+    "p99": 55.58826200012845
+  },
+  "limitations": "finite closed-loop creation-only smoke; no production-capacity or spike proof"
+}

@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - include:
+      file: 001-schema.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 002-catalog.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 003-outbox-immutability.sql
+      relativeToChangelogFile: true

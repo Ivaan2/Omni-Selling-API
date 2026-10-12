@@ -1,0 +1,73 @@
+spring:
+  application:
+    name: order-management
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/orders}
+    username: ${DATABASE_USER:orders}
+    password: ${DATABASE_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DATABASE_POOL_SIZE:16}
+      connection-timeout: 3000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+      accept-float-as-int: false
+  task:
+    scheduling:
+      shutdown:
+        await-termination: true
+        await-termination-period: 120s
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+server:
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  health:
+    readinessstate:
+      enabled: true
+  endpoint.health.group.readiness.include: readinessState,db
+logging:
+  structured:
+    format:
+      console: logstash
+app:
+  admin:
+    username: ${ADMIN_USERNAME:admin}
+    password: ${ADMIN_PASSWORD}
+  idempotency-retention: ${IDEMPOTENCY_RETENTION:24h}
+  payment:
+    adapter: ${PAYMENT_ADAPTER:fake}
+    fake-outcome: ${FAKE_PAYMENT_OUTCOME:SUCCEEDED}
+    fake-lookup-outcome: ${FAKE_PAYMENT_LOOKUP_OUTCOME:UNKNOWN}
+    recovery-age: ${PAYMENT_RECOVERY_AGE:30s}
+    recovery-interval: ${PAYMENT_RECOVERY_INTERVAL:5000}
+  outbox:
+    enabled: ${OUTBOX_ENABLED:true}
+    poll-interval: ${OUTBOX_POLL_INTERVAL:500}
+    batch-size: ${OUTBOX_BATCH_SIZE:20}
+    lease: ${OUTBOX_LEASE:3m}
+    timeout: ${EVENT_HTTP_TIMEOUT:5s}
+    max-retries: ${OUTBOX_MAX_RETRIES:8}
+    retry-base: ${OUTBOX_RETRY_BASE:1s}
+    retry-max: ${OUTBOX_RETRY_MAX:5m}
+    receiver-url: ${EVENT_RECEIVER_URL:}
