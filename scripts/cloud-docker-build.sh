@@ -7,7 +7,7 @@ mkdir -p /workspace/.docker-cli
 export DOCKER_CONFIG=/workspace/.docker-cli
 python3 - <<'PY'
 import os,socket,subprocess,urllib.parse
-args=['docker','build']
+args=['docker','build','-f','docker/Dockerfile']
 proxy=urllib.parse.urlparse(os.environ.get('HTTPS_PROXY',os.environ.get('https_proxy','')))
 if proxy.hostname:
  address=socket.getaddrinfo(proxy.hostname,proxy.port or 80,socket.AF_INET)[0][4][0]

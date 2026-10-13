@@ -2,6 +2,8 @@
 
 ## Explicit defaults
 
+- Local PostgreSQL defaults to user/database/password `orders`; `DATABASE_PASSWORD` can override the password in Compose and the application. Docker files live in `docker/`, with the repository root as the image build context.
+
 - Single deployable modular monolith, one authoritative PostgreSQL database, Java 21 and Spring Boot 4.1.1. Maven Central availability determines the stable patch; compatibility is exercised by actual application/test startup.
 - EUR only; exact two-decimal amounts, no implicit rounding, taxes/shipping/discounts absent. Zero-priced products are allowed.
 - Catalog purchase resolution holds a shared product-row lock through order commit, so a concurrent product deletion cannot invalidate the in-flight snapshot.

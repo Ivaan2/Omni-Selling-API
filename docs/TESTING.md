@@ -53,7 +53,7 @@ Surefire executes `*Test`; Failsafe executes `*IT` during verify. Reports are ge
 
 For this Codex machine only, source `scripts/cloud-env.sh` first to select the full JDK 21, writable Maven cache, proxy settings and trusted CA store. `scripts/cloud-setup.sh` exercises that setup and runs clean verify. Nothing disables TLS/checksum verification. The Maven Wrapper distribution has a SHA-256 pin derived from an official SHA-512-verified artifact.
 
-## Actually validated (2026-10-12)
+## Actually validated (2026-10-12; Docker layout revalidated 2026-10-13)
 
 | Check | Executed outcome |
 |---|---|
@@ -63,7 +63,7 @@ For this Codex machine only, source `scripts/cloud-env.sh` first to select the f
 | Payment application | 5 passed |
 | Architecture | 1 passed |
 | PostgreSQL integration/API | 34 passed |
-| `docker compose up -d --wait` | PostgreSQL 17.6 and Python receiver started; database health checked |
+| `docker compose -f docker/docker-compose.yml up -d --wait` | PostgreSQL 17.6 and Python receiver started; database health checked |
 | Executable jar startup | Liquibase applies/validates schema, Hibernate validate succeeds, readiness UP |
 | `python3 scripts/smoke.py` | PASS across all seven endpoints, paid order, PENDING fulfilment, idempotency and restricted deletion |
 | Full JVM restart with retained Compose data | Earlier PAID order and its PENDING fulfilment remain readable; new jar applies appended changeset without editing previous migrations; smoke passes again |
@@ -81,3 +81,7 @@ The script reports actual duration/rate/errors/latencies. It does not impose a p
 ## Remaining risks / unexecuted production checks
 
 Real provider/idempotency/reconciliation APIs, durable external consumer side effects, production identity/authorization, TLS/receiver authentication, backups/restore/failover, migration operations on production-sized tables, retention/archival, prolonged saturation, slow/unavailable multi-consumer workloads and full deployment shutdown/failure drills are outside demonstrated guarantees. Exactly-once end-to-end delivery is not claimed.
+
+## Docker directory and local defaults (2026-10-13)
+
+Moved Dockerfile and Compose into `docker/`, retaining the repository root as the image build context and correcting the receiver bind mount. Verified Compose configuration with `DATABASE_PASSWORD` unset, fresh PostgreSQL authentication using `orders`, and the rebuilt image's complete seven-endpoint smoke flow using the application's matching default. The existing 61-test clean verify suite passed with no failures/errors/skips. Verification used an isolated Compose project with temporary ports and removed only its own containers/volume afterward. Existing local `.env` values remain unchanged.

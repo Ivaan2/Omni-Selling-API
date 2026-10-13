@@ -23,13 +23,13 @@ Run all commands from the repository root:
 set -a
 . ./.env
 set +a
-docker compose up -d --wait
+docker compose -f docker/docker-compose.yml up -d --wait
 ./mvnw spring-boot:run
 ```
 
-The helper generates random **local-only** database/admin passwords in an ignored, mode-600 `.env`, and preserves existing files. Keep it private. Use your secret manager for deployment. Compose reads `.env`; Java requires these variables exported as above. If you already have `.env`, supply both required passwords. On an existing PostgreSQL volume, changing `.env` does not change the database user's password.
+The helper creates an ignored, mode-600 `.env` containing the local database password `orders` and a random administrative password. It preserves any existing `.env`. Keep it private. Use your secret manager for deployment. Compose reads `.env`; Java requires these variables exported as above. Existing `.env` values are preserved. `DATABASE_PASSWORD` optionally overrides the local `orders` default; `ADMIN_PASSWORD` remains required. On an existing PostgreSQL volume, changing `.env` does not change the database user's password.
 
-Liquibase applies the ordered SQL changesets on a clean database. Hibernate uses `ddl-auto=validate`; it never creates the schema. Missing passwords or unavailable PostgreSQL prevent startup. The catalog seeds three fixed products, two commercially available.
+Liquibase applies the ordered SQL changesets on a clean database. Hibernate uses `ddl-auto=validate`; it never creates the schema. Missing administrative credentials or unavailable PostgreSQL prevent startup. The catalog seeds three fixed products, two commercially available.
 
 ```sh
 curl --fail http://localhost:8080/actuator/health/liveness
@@ -82,13 +82,13 @@ Internal paths require HTTP Basic with ADMIN role. `/internal` is not itself a s
 With the helper's receiver URL, every order transition creates an independent HTTP delivery. `OrderPaid` also creates an independent internal delivery. A 2xx receiver response is the positive acknowledgement contract. The receiver must durably commit its own work **before** returning 2xx. The supplied receiver is a lightweight demo, with in-memory deduplication only.
 
 ```sh
-docker compose logs --tail=30 receiver
+docker compose -f docker/docker-compose.yml logs --tail=30 receiver
 # Receiver outage: business commits still succeed.
-docker compose stop receiver
+docker compose -f docker/docker-compose.yml stop receiver
 # Create/pay a fresh order with fresh keys; inspect order and eventual fulfilment.
-docker compose exec -T postgres psql -U orders -d orders -c \
+docker compose -f docker/docker-compose.yml exec -T postgres psql -U orders -d orders -c \
   "SELECT destination,status,retry_count,last_error FROM outbox_deliveries ORDER BY created_at;"
-docker compose start receiver
+docker compose -f docker/docker-compose.yml start receiver
 # Observe retries in receiver logs and DELIVERED state in PostgreSQL.
 ```
 
@@ -96,7 +96,7 @@ Automatic retries use bounded exponential delays and eventually become EXHAUSTED
 
 ```sh
 EVENT_ID='<event-uuid>'
-docker compose exec -T postgres psql -U orders -d orders -v event_id="$EVENT_ID" \
+docker compose -f docker/docker-compose.yml exec -T postgres psql -U orders -d orders -v event_id="$EVENT_ID" \
   < scripts/recover-deliveries.sql
 ```
 
@@ -120,7 +120,7 @@ A completed idempotent response remains the **original response snapshot**, even
 |---|---|
 | DATABASE_URL | `jdbc:postgresql://localhost:5432/orders` |
 | DATABASE_USER | `orders` |
-| DATABASE_PASSWORD | Required; no committed default |
+| DATABASE_PASSWORD | `orders` for local use; optional override |
 | DATABASE_POOL_SIZE | 16, per instance |
 | ADMIN_USERNAME / ADMIN_PASSWORD | `admin` / required |
 | IDEMPOTENCY_RETENTION | `24h` |
@@ -148,10 +148,10 @@ Durations use Spring notation (`30s`, `3m`, `24h`). PostgreSQL UUID, TIMESTAMPTZ
 ./mvnw -Dit.test=OrderManagementIT verify
 java -jar target/order-management-1.0.0-SNAPSHOT.jar
 # Optional container image; tests belong to the verify step above.
-docker build -t order-management:local .
+docker build -f docker/Dockerfile -t order-management:local .
 ```
 
-The Dockerfile builds a Java 21 executable jar and runs as a non-root user. Supply environment variables and a reachable DATABASE_URL/EVENT_RECEIVER_URL when running it. Container loopback refers to the container itself, not the host.
+`docker/Dockerfile` builds a Java 21 executable jar and runs as a non-root user. Supply environment variables and a reachable DATABASE_URL/EVENT_RECEIVER_URL when running it. Container loopback refers to the container itself, not the host.
 
 Testcontainers is mandatory for the integration suite; no tests are silently skipped when Docker is unavailable. See [TESTING](docs/TESTING.md) for actual execution evidence and concurrency coverage. `scripts/load.py` provides an optional lightweight smoke workload; no 500,000/day throughput claim is made.
 
